@@ -299,6 +299,9 @@ public class MCost extends X_M_Cost implements ICostInfo
 		if (MCostElement.COSTINGMETHOD_StandardCosting.equals(costingMethod))
 		{
 			if (s_log.isLoggable(Level.FINER)) s_log.finer("MaterialCosts = " + materialCost);
+			if(materialCost == null) {
+				materialCost = calculateTaxFromLines(C_OrderLine_ID,qty);
+			}
 			return materialCost;
 		}
 		if (MCostElement.COSTINGMETHOD_Fifo.equals(costingMethod)
@@ -307,6 +310,9 @@ public class MCost extends X_M_Cost implements ICostInfo
 			MCostElement ce = MCostElement.getMaterialCostElement(as, costingMethod);
 			materialCost = MCostQueue.getCosts(product, M_ASI_ID,
 				as, Org_ID, ce, qty, trxName);
+			if(materialCost == null) {
+				materialCost = calculateTaxFromLines(C_OrderLine_ID,qty);
+			}
 		}
 
 		//	Other Costs
@@ -334,6 +340,65 @@ public class MCost extends X_M_Cost implements ICostInfo
 		if (s_log.isLoggable(Level.FINER)) s_log.finer("Sum Costs = " + costs + " (Add=" + percentCost + ")");
 		return costs;
 	}	//	getCurrentCost
+	
+	private static BigDecimal calculateTaxFromLines (int orderline, BigDecimal qty)
+	{
+		BigDecimal taxBaseAmt = Env.ZERO;
+		BigDecimal taxAmt = Env.ZERO;
+		BigDecimal hasil = Env.ZERO;
+		
+		MOrderLine mOrderLine = new MOrderLine(Env.getCtx(), orderline, null);
+		//
+		boolean documentLevel = mOrderLine.getTax().isDocumentLevel();
+		MTax tax = mOrderLine.getTax();
+		//
+		String sql = "SELECT "+qty+"*priceactual FROM C_OrderLine WHERE C_OrderLine_ID=? AND C_Tax_ID=?";
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try
+		{
+			pstmt = DB.prepareStatement (sql, null);
+			pstmt.setInt (1, mOrderLine.getC_OrderLine_ID());
+			pstmt.setInt (2, mOrderLine.getC_Tax_ID());
+			rs = pstmt.executeQuery ();
+			while (rs.next ())
+			{
+				BigDecimal baseAmt = rs.getBigDecimal(1);
+				taxBaseAmt = taxBaseAmt.add(baseAmt);
+				//System.out.println("sdsfs"+taxBaseAmt+baseAmt);
+				//
+				if (!documentLevel)		// calculate line tax
+					taxAmt = taxAmt.add(tax.calculateTax(baseAmt, mOrderLine.isTaxIncluded(), mOrderLine.getPrecision()));
+			}
+		}
+		catch (Exception e)
+		{
+			taxBaseAmt = null;
+		}
+		finally
+		{
+			DB.close(rs, pstmt);
+			rs = null;
+			pstmt = null;
+		}
+		//
+//		if (taxBaseAmt == null)
+//			return false;
+		
+		//	Calculate Tax
+		if (documentLevel)		//	document level
+			taxAmt = tax.calculateTax(taxBaseAmt, mOrderLine.isTaxIncluded(), mOrderLine.getPrecision());
+		//setTaxAmt(taxAmt);
+
+		//	Set Base
+		if (mOrderLine.isTaxIncluded())
+			hasil = taxBaseAmt.subtract(taxAmt);
+		else
+			hasil = taxBaseAmt;
+		//System.out.println("dsds"+taxAmt);
+		//System.out.println("fgfg"+taxBaseAmt);
+		return hasil;
+	}
 
 	/**
 	 * 	Get Seed Costs
@@ -1560,7 +1625,7 @@ public class MCost extends X_M_Cost implements ICostInfo
 			return history;
 		
 		// get from MCost
-		MCost cost = get(ctx, AD_Client_ID, AD_Org_ID, M_Product_ID, M_CostType_ID, C_AcctSchema_ID, M_CostElement_ID, M_AttributeSetInstance_ID, trxName);
+		MCost cost = get(ctx, AD_Client_ID, AD_Org_ID, M_Product_ID, M_CostType_ID, C_AcctSchema_ID, M_CostElement_ID, M_AttributeSetInstance_ID, trxName);		
 		if (history != null && MCostElement.COSTINGMETHOD_StandardCosting.equals(costingMethod)) {
 			cost.setCurrentQty(history.getCurrentQty());
 			cost.setCumulatedQty(history.getCumulatedQty());

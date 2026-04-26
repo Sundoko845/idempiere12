@@ -264,6 +264,18 @@ public class MCostQueue extends X_M_CostQueue
 				return cost;
 			}
 			
+			if(remainingQty.signum() > 0 && queue.getCurrentQty().signum() == 0 ) {
+				@SuppressWarnings("unused")
+				BigDecimal oldQty = queue.getCurrentQty();
+				lastPrice = queue.getCurrentCostPrice();
+				BigDecimal costBatch = lastPrice.multiply(remainingQty);
+				cost = cost.add(costBatch);
+				if (s_log.isLoggable(Level.CONFIG)) s_log.config("ASI=" + queue.getM_AttributeSetInstance_ID()
+					+ " - Cost=" + lastPrice + " * Qty=" + remainingQty + "(!) = " + costBatch);
+				return cost;
+			}
+			
+			
 			//	Positive queue
 			if (queue.getCurrentQty().signum() > 0)
 			{
@@ -384,6 +396,7 @@ public class MCostQueue extends X_M_CostQueue
 	 *	@param qty quantity
 	 *	@param precision costing precision
 	 */
+	
 	public void setCosts (BigDecimal amt, BigDecimal qty, int precision)
 	{
 		BigDecimal oldSum = getCurrentCostPrice().multiply(getCurrentQty());
@@ -397,6 +410,37 @@ public class MCostQueue extends X_M_CostQueue
 		}
 		//
 		setCurrentQty(getCurrentQty().add(qty));
+
+	
+	}
+	public void setCosts (BigDecimal amt, BigDecimal qty, int precision, boolean adjs,int jml)
+	{
+//		BigDecimal oldSum = getCurrentCostPrice().multiply(getCurrentQty());
+//		BigDecimal newSum = amt;	//	is total already
+//		BigDecimal sumAmt = oldSum.add(newSum);
+//		BigDecimal sumQty = getCurrentQty().add(qty);
+//		if (sumQty.signum() != 0)
+//		{
+//			BigDecimal cost = sumAmt.divide(sumQty, precision, RoundingMode.HALF_UP);
+//			setCurrentCostPrice(cost);
+//		}
+//		//
+//		setCurrentQty(getCurrentQty().add(qty));
+		BigDecimal oldSum = getCurrentCostPrice().multiply(getCurrentQty());
+		BigDecimal newSum = amt;	//	is total already
+		BigDecimal sumAmt = oldSum.add(newSum);	
+	
+		BigDecimal sumQty = getCurrentQty().add(qty);
+		if (sumQty.signum() != 0 && adjs && jml==1)
+		{
+			BigDecimal cost = sumAmt.divide(sumQty, precision, RoundingMode.HALF_UP);
+			setCurrentCostPrice(cost);
+		}else if (sumQty.signum() != 0 && !adjs && jml==0) {
+			BigDecimal cost = sumAmt.divide(sumQty, precision, RoundingMode.HALF_UP);
+			setCurrentCostPrice(cost);
+		}	
+		setCurrentQty(getCurrentQty().add(qty));
+	
 	}	//	update
 	
 }	//	MCostQueue
