@@ -143,6 +143,7 @@ public class MCost extends X_M_Cost implements ICostInfo
 		}
 
 		//	Create/Update Costs
+	
 		if (!isInBackDatePostingProcess) // skip if is in a back-date posting process
 			MCostDetail.processProduct (as, product, dateAcct, trxName);
 		 
@@ -251,6 +252,7 @@ public class MCost extends X_M_Cost implements ICostInfo
 					+ ", CostElementType=" + costElementType
 					+ ", CostingMethod=" + cm
 					+ ", Percent=" + percent);				
+				
 				
 				if (currentCostPrice != null && currentCostPrice.signum() != 0)
 				{
@@ -365,7 +367,7 @@ public class MCost extends X_M_Cost implements ICostInfo
 			{
 				BigDecimal baseAmt = rs.getBigDecimal(1);
 				taxBaseAmt = taxBaseAmt.add(baseAmt);
-				//System.out.println("sdsfs"+taxBaseAmt+baseAmt);
+			
 				//
 				if (!documentLevel)		// calculate line tax
 					taxAmt = taxAmt.add(tax.calculateTax(baseAmt, mOrderLine.isTaxIncluded(), mOrderLine.getPrecision()));
@@ -395,8 +397,7 @@ public class MCost extends X_M_Cost implements ICostInfo
 			hasil = taxBaseAmt.subtract(taxAmt);
 		else
 			hasil = taxBaseAmt;
-		//System.out.println("dsds"+taxAmt);
-		//System.out.println("fgfg"+taxBaseAmt);
+		
 		return hasil;
 	}
 
@@ -1747,6 +1748,7 @@ public class MCost extends X_M_Cost implements ICostInfo
 				}
 			}
 		}
+	
 		setCumulatedAmt(getCumulatedAmt().add(amt));
 		setCumulatedQty(getCumulatedQty().add(qty));
 		setCurrentQty(getCurrentQty().add(qty));

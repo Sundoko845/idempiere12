@@ -1039,11 +1039,14 @@ public class MCostDetail extends X_M_CostDetail
 				+ "CASE WHEN COALESCE(refcd.DateAcct,M_CostDetail.DateAcct) = M_CostDetail.DateAcct THEN COALESCE(M_CostDetail.Ref_CostDetail_ID,M_CostDetail.M_CostDetail_ID) ELSE M_CostDetail.M_CostDetail_ID END, "
 				+ "M_CostDetail.M_CostDetail_ID")
 		.list();
+	
 		for (MCostDetail cd : list) {
 			if (cd.process())	//	saves
 				counterOK++;
+			    
 			else
 				counterError++;
+		
 		}
 		if (s_log.isLoggable(Level.CONFIG)) s_log.config("OK=" + counterOK + ", Errors=" + counterError);
 		return counterError == 0;
@@ -1614,6 +1617,7 @@ public class MCostDetail extends X_M_CostDetail
 			}
 			else if ((ce.isFifo() || ce.isLifo()))
 			{
+				
 				//	Real ASI - costing level Org
 				MCostQueue cq = MCostQueue.get(product, getM_AttributeSetInstance_ID(), 
 					as, Org_ID, ce.getM_CostElement_ID(), get_TrxName());
@@ -1628,15 +1632,19 @@ public class MCostDetail extends X_M_CostDetail
 					}catch (Exception e) {
 						
 					}
-				//cq.setCosts(amt, qty, precision);
-				cq.setCosts(amt, qty, precision, adjs,jmladjs);
+			//	cq.setCosts(amt, qty, precision);
+				
+				cq.setCosts(amt, qty, precision, adjs,jmladjs,cost.getCurrentQty());
 				cq.saveEx();
+				
 				//	Get Costs - costing level Org/ASI
-				MCostQueue[] cQueue = MCostQueue.getQueue(product, M_ASI_ID, 
-					as, Org_ID, ce, get_TrxName());
-				if (cQueue != null && cQueue.length > 0)
-					cost.setCurrentCostPrice(cQueue[0].getCurrentCostPrice());
+//				MCostQueue[] cQueue = MCostQueue.getQueue(product, M_ASI_ID, 
+//					as, Org_ID, ce, get_TrxName());
+//				if (cQueue != null && cQueue.length > 0)
+//					System.out.println(cQueue.length);
+					cost.setCurrentCostPrice(cq.getCurrentCostPrice());
 				cost.add(amt, qty);
+				
 				if (log.isLoggable(Level.FINER)) log.finer("Inv - FiFo/LiFo - " + cost);
 			}
 			else if (ce.isUserDefined())
@@ -1808,59 +1816,59 @@ public class MCostDetail extends X_M_CostDetail
 			}
 			else if (ce.isFifo() || ce.isLifo())
 			{
-//				if (!isVendorRMA && !adjustment)
-//				{
-//					if (addition)
-//					{
-//						//	Real ASI - costing level Org
-//						MCostQueue cq = MCostQueue.get(product, getM_AttributeSetInstance_ID(), 
-//							as, Org_ID, ce.getM_CostElement_ID(), get_TrxName());
-//						cq.setCosts(amt, qty, precision);
-//						cq.saveEx();
-//					}
-//					else
-//					{
-//						//	Adjust Queue - costing level Org/ASI
-//						MCostQueue.adjustQty(product, M_ASI_ID, 
-//							as, Org_ID, ce, qty.negate(), get_TrxName());
-//					}
-//					//	Get Costs - costing level Org/ASI
-//					MCostQueue[] cQueue = MCostQueue.getQueue(product, M_ASI_ID, 
-//						as, Org_ID, ce, get_TrxName());
-//					if (cQueue != null && cQueue.length > 0)
-//						cost.setCurrentCostPrice(cQueue[0].getCurrentCostPrice());
-//					cost.setCurrentQty(cost.getCurrentQty().add(qty));
-//					if (log.isLoggable(Level.FINER)) log.finer("QtyAdjust - FiFo/Lifo - " + cost);
-//				}
-				if (!isVendorRMA && !adjustment) {
-                    if (addition) {
-                        final MCostQueue cq2 = MCostQueue.get(product, this.getM_AttributeSetInstance_ID(), as, Org_ID, ce.getM_CostElement_ID(), this.get_TrxName());
-                        try {
-        					if(getM_InventoryLine().getM_Inventory().getC_DocType().getDocSubTypeInv().equals(MDocType.DOCSUBTYPEINV_CostAdjustment)){
-        						adjs = true;
-        						jmladjs = 1;
-        					}else {
-        						adjs = true;
-        						jmladjs = 2;
-        					}
-        					}catch (Exception e) {
-        						
-        					}
-                        cq2.setCosts(amt, qty, precision,adjs,jmladjs);
-                        cq2.saveEx();
-                    }
-                    else {
-                        MCostQueue.adjustQty(product, M_ASI_ID, as, Org_ID, ce, qty.negate(), this.get_TrxName());
-                    }
-                    MCostQueue[] cQueue2 = MCostQueue.getQueue(product, M_ASI_ID, as, Org_ID, ce, this.get_TrxName());
-                    if (cQueue2 != null && cQueue2.length > 0) {
-                        cost.setCurrentCostPrice(cQueue2[0].getCurrentCostPrice());
-                    }
-                    cost.add(amt, qty);
-                    if (this.log.isLoggable(Level.FINER)) {
-                        this.log.finer("QtyAdjust - FiFo/Lifo - " + cost);
-                    }
-                }
+				if (!isVendorRMA && !adjustment)
+				{
+					if (addition)
+					{
+						//	Real ASI - costing level Org
+						MCostQueue cq = MCostQueue.get(product, getM_AttributeSetInstance_ID(), 
+							as, Org_ID, ce.getM_CostElement_ID(), get_TrxName());
+						cq.setCosts(amt, qty, precision);
+						cq.saveEx();
+					}
+					else
+					{
+						//	Adjust Queue - costing level Org/ASI
+						MCostQueue.adjustQty(product, M_ASI_ID, 
+							as, Org_ID, ce, qty.negate(), get_TrxName());
+					}
+					//	Get Costs - costing level Org/ASI
+					MCostQueue[] cQueue = MCostQueue.getQueue(product, M_ASI_ID, 
+						as, Org_ID, ce, get_TrxName());
+					if (cQueue != null && cQueue.length > 0)
+						cost.setCurrentCostPrice(cQueue[0].getCurrentCostPrice());
+					cost.setCurrentQty(cost.getCurrentQty().add(qty));
+					if (log.isLoggable(Level.FINER)) log.finer("QtyAdjust - FiFo/Lifo - " + cost);
+				}
+//				if (!isVendorRMA && !adjustment) {
+//                    if (addition) {
+//                        final MCostQueue cq2 = MCostQueue.get(product, this.getM_AttributeSetInstance_ID(), as, Org_ID, ce.getM_CostElement_ID(), this.get_TrxName());
+//                        try {
+//        					if(getM_InventoryLine().getM_Inventory().getC_DocType().getDocSubTypeInv().equals(MDocType.DOCSUBTYPEINV_CostAdjustment)){
+//        						adjs = true;
+//        						jmladjs = 1;
+//        					}else {
+//        						adjs = true;
+//        						jmladjs = 2;
+//        					}
+//        					}catch (Exception e) {
+//        						
+//        					}
+//                        cq2.setCosts(amt, qty, precision,adjs,jmladjs);
+//                        cq2.saveEx();
+//                    }
+//                    else {
+//                        MCostQueue.adjustQty(product, M_ASI_ID, as, Org_ID, ce, qty.negate(), this.get_TrxName());
+//                    }
+//                    MCostQueue[] cQueue2 = MCostQueue.getQueue(product, M_ASI_ID, as, Org_ID, ce, this.get_TrxName());
+//                    if (cQueue2 != null && cQueue2.length > 0) {
+//                        cost.setCurrentCostPrice(cQueue2[0].getCurrentCostPrice());
+//                    }
+//                    cost.add(amt, qty);
+//                    if (this.log.isLoggable(Level.FINER)) {
+//                        this.log.finer("QtyAdjust - FiFo/Lifo - " + cost);
+//                    }
+//                }
                 else {
                     if (!addition) {
                         final MCostQueue cq2 = MCostQueue.get(product, this.getM_AttributeSetInstance_ID(), as, Org_ID, ce.getM_CostElement_ID(), this.get_TrxName());
@@ -1875,7 +1883,7 @@ public class MCostDetail extends X_M_CostDetail
         					}catch (Exception e) {
         						
         					}
-                        cq2.setCosts(amt, qty, precision, adjs,jmladjs);
+                        cq2.setCosts(amt, qty, precision, adjs,jmladjs,cost.getCurrentQty());
                         cq2.saveEx();
                     }
                     else {

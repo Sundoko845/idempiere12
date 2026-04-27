@@ -193,6 +193,8 @@ public class MCostQueue extends X_M_CostQueue
 					return null;
 			}
 			
+			
+			
 			//	Positive queue
 			if (queue.getCurrentQty().signum() > 0)
 			{
@@ -254,6 +256,18 @@ public class MCostQueue extends X_M_CostQueue
 			//	Negative Qty i.e. add
 			if (remainingQty.signum() <= 0)
 			{
+				@SuppressWarnings("unused")
+				BigDecimal oldQty = queue.getCurrentQty();
+				lastPrice = queue.getCurrentCostPrice();
+				BigDecimal costBatch = lastPrice.multiply(remainingQty);
+				cost = cost.add(costBatch);
+				if (s_log.isLoggable(Level.CONFIG)) s_log.config("ASI=" + queue.getM_AttributeSetInstance_ID()
+					+ " - Cost=" + lastPrice + " * Qty=" + remainingQty + "(!) = " + costBatch);
+				return cost;
+			}
+			
+			//yoyo penambahan
+			if(remainingQty.signum() > 0 && queue.getCurrentQty().signum() == 0 ) {
 				@SuppressWarnings("unused")
 				BigDecimal oldQty = queue.getCurrentQty();
 				lastPrice = queue.getCurrentCostPrice();
@@ -413,7 +427,7 @@ public class MCostQueue extends X_M_CostQueue
 
 	
 	}
-	public void setCosts (BigDecimal amt, BigDecimal qty, int precision, boolean adjs,int jml)
+	public void setCosts (BigDecimal amt, BigDecimal qty, int precision, boolean adjs,int jml,BigDecimal costqty)
 	{
 //		BigDecimal oldSum = getCurrentCostPrice().multiply(getCurrentQty());
 //		BigDecimal newSum = amt;	//	is total already
@@ -429,6 +443,8 @@ public class MCostQueue extends X_M_CostQueue
 		BigDecimal oldSum = getCurrentCostPrice().multiply(getCurrentQty());
 		BigDecimal newSum = amt;	//	is total already
 		BigDecimal sumAmt = oldSum.add(newSum);	
+		
+	
 	
 		BigDecimal sumQty = getCurrentQty().add(qty);
 		if (sumQty.signum() != 0 && adjs && jml==1)
@@ -439,7 +455,7 @@ public class MCostQueue extends X_M_CostQueue
 			BigDecimal cost = sumAmt.divide(sumQty, precision, RoundingMode.HALF_UP);
 			setCurrentCostPrice(cost);
 		}	
-		setCurrentQty(getCurrentQty().add(qty));
+		setCurrentQty(costqty.add(qty));
 	
 	}	//	update
 	
