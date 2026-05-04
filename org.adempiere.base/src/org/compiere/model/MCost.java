@@ -143,10 +143,12 @@ public class MCost extends X_M_Cost implements ICostInfo
 		}
 
 		//	Create/Update Costs
+		
+
 	
-		if (!isInBackDatePostingProcess) // skip if is in a back-date posting process
-			MCostDetail.processProduct (as, product, dateAcct, trxName);
-		 
+//		if (!isInBackDatePostingProcess) // skip if is in a back-date posting process
+//			MCostDetail.processProduct (as, product, dateAcct, trxName);
+//		 
 		MCostHistory history = null;
 		if (costDetail != null) // get the latest cost history record of the cost detail
 			history = MCostHistory.get(product.getCtx(), AD_Org_ID, 
@@ -315,6 +317,7 @@ public class MCost extends X_M_Cost implements ICostInfo
 			if(materialCost == null) {
 				materialCost = calculateTaxFromLines(C_OrderLine_ID,qty);
 			}
+			
 		}
 
 		//	Other Costs
@@ -1510,6 +1513,7 @@ public class MCost extends X_M_Cost implements ICostInfo
 	{
 		MCost cost = get (product.getCtx(), product.getAD_Client_ID(), AD_Org_ID, product.getM_Product_ID(), 
 				as.getM_CostType_ID(), as.getC_AcctSchema_ID(), M_CostElement_ID, M_AttributeSetInstance_ID, trxName);
+		
 		//	New
 		if (cost == null)
 		{
@@ -2004,7 +2008,7 @@ public class MCost extends X_M_Cost implements ICostInfo
 		return isSkipAverageCostingQtyCheck;
 	}
 
-	protected void setSkipAverageCostingQtyCheck(boolean isSkipAverageCostingQtyCheck) {
+	public void setSkipAverageCostingQtyCheck(boolean isSkipAverageCostingQtyCheck) {
 		this.isSkipAverageCostingQtyCheck = isSkipAverageCostingQtyCheck;
 	}
 	

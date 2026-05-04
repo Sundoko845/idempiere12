@@ -117,8 +117,8 @@ public class MCostQueue extends X_M_CostQueue
 			.append(" AND M_CostElement_ID=?");
 		if (M_ASI_ID != 0)
 			sql.append(" AND M_AttributeSetInstance_ID=?");
-		sql.append(" AND CurrentQty<>0 ")
-			.append("ORDER BY M_AttributeSetInstance_ID ");
+		//sql.append(" AND CurrentQty<>0 ")
+			sql.append("ORDER BY M_AttributeSetInstance_ID ");
 		if (!ce.isFifo())
 			sql.append("DESC");
 		PreparedStatement pstmt = null;
@@ -243,7 +243,7 @@ public class MCostQueue extends X_M_CostQueue
 		if (Qty.signum() == 0)
 			return Env.ZERO;
 		MCostQueue[] costQ = getQueue(product, M_ASI_ID, 
-			as, Org_ID, ce, trxName);
+			as, Org_ID, ce, trxName);		
 		//
 		BigDecimal cost = Env.ZERO;
 		BigDecimal remainingQty = Qty;
@@ -413,6 +413,7 @@ public class MCostQueue extends X_M_CostQueue
 	
 	public void setCosts (BigDecimal amt, BigDecimal qty, int precision)
 	{
+	
 		BigDecimal oldSum = getCurrentCostPrice().multiply(getCurrentQty());
 		BigDecimal newSum = amt;	//	is total already
 		BigDecimal sumAmt = oldSum.add(newSum);
@@ -427,24 +428,13 @@ public class MCostQueue extends X_M_CostQueue
 
 	
 	}
-	public void setCosts (BigDecimal amt, BigDecimal qty, int precision, boolean adjs,int jml,BigDecimal costqty)
+	
+	public void setCosts (BigDecimal amt, BigDecimal qty, int precision, boolean adjs,int jml)
 	{
-//		BigDecimal oldSum = getCurrentCostPrice().multiply(getCurrentQty());
-//		BigDecimal newSum = amt;	//	is total already
-//		BigDecimal sumAmt = oldSum.add(newSum);
-//		BigDecimal sumQty = getCurrentQty().add(qty);
-//		if (sumQty.signum() != 0)
-//		{
-//			BigDecimal cost = sumAmt.divide(sumQty, precision, RoundingMode.HALF_UP);
-//			setCurrentCostPrice(cost);
-//		}
-//		//
-//		setCurrentQty(getCurrentQty().add(qty));
+		
 		BigDecimal oldSum = getCurrentCostPrice().multiply(getCurrentQty());
 		BigDecimal newSum = amt;	//	is total already
 		BigDecimal sumAmt = oldSum.add(newSum);	
-		
-	
 	
 		BigDecimal sumQty = getCurrentQty().add(qty);
 		if (sumQty.signum() != 0 && adjs && jml==1)
@@ -455,8 +445,9 @@ public class MCostQueue extends X_M_CostQueue
 			BigDecimal cost = sumAmt.divide(sumQty, precision, RoundingMode.HALF_UP);
 			setCurrentCostPrice(cost);
 		}	
-		setCurrentQty(costqty.add(qty));
-	
-	}	//	update
+		setCurrentQty(getCurrentQty().add(qty));
+		
+	}
+//	update
 	
 }	//	MCostQueue

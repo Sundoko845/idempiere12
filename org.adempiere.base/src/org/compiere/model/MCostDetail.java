@@ -24,12 +24,14 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 
 import org.adempiere.exceptions.DBException;
 import org.adempiere.exceptions.PeriodClosedException;
+import org.apache.ecs.xhtml.q;
 import org.compiere.acct.Doc;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
@@ -1412,6 +1414,11 @@ public class MCostDetail extends X_M_CostDetail
 			ok = save();
 		}
 		if (log.isLoggable(Level.INFO)) log.info(ok + " - " + toString());
+		BigDecimal currentqty = DB.getSQLValueBD(get_TrxName(), "select coalesce(sum(qtyonhand),0) from m_storage where m_product_id = "+product.getM_Product_ID()+" and M_AttributeSetInstance_ID = "+M_ASI_ID);
+		BigDecimal cost = DB.getSQLValueBD(get_TrxName(), "select CurrentCostPrice from m_cost where m_product_id =  "+product.getM_Product_ID()+" and coalesce(M_AttributeSetInstance_ID,0) = "+M_ASI_ID);
+
+		DB.executeUpdate("update m_cost set currentqty = "+currentqty+",CumulatedQty="+currentqty+","
+				+ "CumulatedAmt="+currentqty.multiply(cost)+" where M_CostElement_ID in(select M_CostElement_ID from M_CostElement where CostElementType='M') and m_product_id = "+product.getM_Product_ID()+" and M_AttributeSetInstance_ID = "+M_ASI_ID, get_TrxName());
 		return ok;
 	}	//	process
 	
@@ -1516,10 +1523,19 @@ public class MCostDetail extends X_M_CostDetail
 					cd != null ? cd : this, get_TrxName());
 		if (costInfo != null)
 		{
-			cost.setCurrentQty(costInfo.getCurrentQty());
-			cost.setCurrentCostPrice(costInfo.getCurrentCostPrice());
-			cost.setCumulatedQty(costInfo.getCumulatedQty());
-			cost.setCumulatedAmt(costInfo.getCumulatedAmt());
+	            try {
+	            	if(cd.getPP_Cost_Collector() == null)
+	            	cost.setCurrentQty(costInfo.getCurrentQty());
+					cost.setCurrentCostPrice(costInfo.getCurrentCostPrice());
+					cost.setCumulatedQty(costInfo.getCumulatedQty());
+					cost.setCumulatedAmt(costInfo.getCumulatedAmt());
+					
+				} catch (Exception e) {
+					// TODO: handle exception
+				}
+				
+			
+	
 		}
 		
 		DB.getDatabase().forUpdate(cost, 120);
@@ -1534,8 +1550,9 @@ public class MCostDetail extends X_M_CostDetail
 		if (isDelta())
 		{
 			if (!isOrderLandedCost) {
-				qty = getDeltaQty();
+				qty = getDeltaQty();				
 				amt = getDeltaAmt();
+			
 			} else {
 				if (isReversedOrderLandedCost) {
 					qty = getDeltaQty();
@@ -1571,6 +1588,7 @@ public class MCostDetail extends X_M_CostDetail
 		BigDecimal price = amt;
 		if (qty.signum() != 0)
 			price = amt.divide(qty, precision, RoundingMode.HALF_UP);
+
 		
 		//	*** Purchase Order Detail Record ***
 		if (getC_OrderLine_ID() != 0)
@@ -1632,16 +1650,14 @@ public class MCostDetail extends X_M_CostDetail
 					}catch (Exception e) {
 						
 					}
-			//	cq.setCosts(amt, qty, precision);
-				
-				cq.setCosts(amt, qty, precision, adjs,jmladjs,cost.getCurrentQty());
-				cq.saveEx();
-				
+			//	cq.setCosts(amt, qty, precision);			
+				cq.setCosts(amt, qty, precision, adjs,jmladjs);
+				cq.saveEx();				
 				//	Get Costs - costing level Org/ASI
 //				MCostQueue[] cQueue = MCostQueue.getQueue(product, M_ASI_ID, 
 //					as, Org_ID, ce, get_TrxName());
 //				if (cQueue != null && cQueue.length > 0)
-//					System.out.println(cQueue.length);
+
 					cost.setCurrentCostPrice(cq.getCurrentCostPrice());
 				cost.add(amt, qty);
 				
@@ -1828,13 +1844,14 @@ public class MCostDetail extends X_M_CostDetail
 					}
 					else
 					{
-						//	Adjust Queue - costing level Org/ASI
-						MCostQueue.adjustQty(product, M_ASI_ID, 
-							as, Org_ID, ce, qty.negate(), get_TrxName());
+						//	Adjust Queue - costing level Org/ASI										
+								MCostQueue.adjustQty(product, M_ASI_ID, 
+										as, Org_ID, ce, qty.negate(), get_TrxName());
 					}
 					//	Get Costs - costing level Org/ASI
 					MCostQueue[] cQueue = MCostQueue.getQueue(product, M_ASI_ID, 
 						as, Org_ID, ce, get_TrxName());
+					
 					if (cQueue != null && cQueue.length > 0)
 						cost.setCurrentCostPrice(cQueue[0].getCurrentCostPrice());
 					cost.setCurrentQty(cost.getCurrentQty().add(qty));
@@ -1883,7 +1900,7 @@ public class MCostDetail extends X_M_CostDetail
         					}catch (Exception e) {
         						
         					}
-                        cq2.setCosts(amt, qty, precision, adjs,jmladjs,cost.getCurrentQty());
+                        cq2.setCosts(amt, qty, precision, adjs,jmladjs);
                         cq2.saveEx();
                     }
                     else {
